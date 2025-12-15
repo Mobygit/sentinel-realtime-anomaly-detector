@@ -42,11 +42,11 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t sentinel-anomaly:latest .
-      - name: Save image artifact
+      - name: Save Docker image to tar
+        run: |
+          docker save sentinel-anomaly:latest -o sentinel-anomaly.tar
+      - name: Upload image artifact
         uses: actions/upload-artifact@v4
         with:
           name: docker-image-tar
-          path: |
-            ./sentinel-anomaly.tar
-        run: |
-          docker save sentinel-anomaly:latest -o sentinel-anomaly.tar
+          path: sentinel-anomaly.tar
