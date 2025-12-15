@@ -1,0 +1,16 @@
+# Virtual env
+sentinel_env/
+
+# Byte-compiled / generated
+__pycache__/
+*.py[cod]
+
+# Models
+# Ignore versioned models but keep latest placeholders for demos
+models/*.pkl
+!models/model_latest.pkl
+!models/scaler_latest.pkl
+models/*.json
+
+env/
+venv/

@@ -1,0 +1,23 @@
+# config.yaml - Production Configuration
+
+# Core settings
+model_path: "models/model_latest.pkl"
+scaler_path: "models/scaler_latest.pkl"
+slack_webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+slack_channel: "#alerts"
+alert_threshold: -0.15
+log_level: "INFO"
+
+# Performance settings
+batch_size: 10
+processing_delay: 0.1
+max_line_length: 5000
+
+# Monitoring settings
+metrics_enabled: true
+stats_interval: 300
+performance_alert_threshold: 500
+
+# Model settings
+confidence_threshold: 0.6
+enable_explanations: true
