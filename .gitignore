@@ -12,5 +12,17 @@ models/*.pkl
 !models/scaler_latest.pkl
 models/*.json
 
+# Python cache
+__pycache__/
+.mypy_cache/
+*.pyc
+
+# Test/demo log files
+test.log
+load_test.log
+poll_test.log
+sample_normal.log
+demo/*.log
+
 env/
 venv/
