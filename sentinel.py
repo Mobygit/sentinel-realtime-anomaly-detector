@@ -85,6 +85,8 @@ class SentinelConfig:
         self.allow_fallback = False
         # Allow disabling alerts (useful for demos)
         self.disable_alerting = False
+        # Production mode: enforce presence of model/scaler and fail fast
+        self.production = False
 
         # Performance settings
         self.batch_size = 1
@@ -131,6 +133,11 @@ class SentinelConfig:
             '--allow-fallback',
             action='store_true',
             help='Allow running without trained model/scaler (development only)',
+        )
+        parser.add_argument(
+            '--production',
+            action='store_true',
+            help='Run in production mode and fail if model/scaler are missing',
         )
         parser.add_argument(
             '--disable-alerting',
@@ -191,6 +198,7 @@ class SentinelConfig:
         config.slack_channel = args.slack_channel or config.slack_channel
         config.allow_fallback = args.allow_fallback or getattr(config, 'allow_fallback', False)
         config.disable_alerting = args.disable_alerting or getattr(config, 'disable_alerting', False)
+        config.production = args.production or getattr(config, 'production', False)
         config.alert_threshold = args.alert_threshold
         config.log_level = args.log_level
         config.batch_size = args.batch_size
@@ -230,8 +238,8 @@ class SentinelConfig:
         
         if not Path(self.log_file).exists():
             errors.append(f"Log file does not exist: {self.log_file}")
-        # Model/scaler are required in production, but may be optional for development
-        if not getattr(self, 'allow_fallback', False):
+        # Model/scaler are required in production or when fallback is not allowed
+        if self.production or not getattr(self, 'allow_fallback', False):
             if not Path(self.model_path).exists():
                 errors.append(f"Model file does not exist: {self.model_path}")
             if not Path(self.scaler_path).exists():
@@ -441,6 +449,10 @@ def start_monitoring(config):
             scaler = pickle.load(f)
         logging.info("✅ Model and scaler loaded successfully!")
     except Exception as e:
+        if getattr(config, 'production', False):
+            logging.error(f"❌ Failed to load model or scaler in production: {e}")
+            raise
+
         # If model/scaler cannot be loaded, create lightweight fallbacks so
         # the monitor can run for development/testing without trained artifacts.
         logging.warning(
