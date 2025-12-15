@@ -1,65 +1,118 @@
-# Sentinel - Real-time Anomaly Detector
+# Sentinel - Real-time Log Anomaly Detector
 
-This repository contains a real-time log anomaly detection system (Sentinel). This README covers quick setup, running in dev and production modes, and testing.
+Sentinel is a lightweight real-time log anomaly detector that tails a log file, extracts features, scores lines with an unsupervised model (IsolationForest), and sends alerts (Slack or console) for high-confidence anomalies.
 
-## Quick setup (Windows PowerShell)
+This README provides cross-platform, step-by-step instructions for running the project on Windows, macOS, or Linux.
 
-Activate the existing virtualenv in the repo:
+## Requirements
 
-```powershell
-& "C:/mobython/projects/Zaalima Projects/sentinel-realtime-anomaly-detector/sentinel_env/Scripts/Activate.ps1"
+* Python 3.10+ (3.12 used for development)
+* Docker (optional)
+
+## Setup (Cross-Platform)
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/Mobygit/sentinel-realtime-anomaly-detector.git
+cd sentinel-realtime-anomaly-detector
 ```
 
-Install dependencies (if needed):
+2. Create and activate a virtual environment
+
+**Windows (PowerShell)**
 
 ```powershell
+python -m venv .venv
+& .\.venv\Scripts\Activate.ps1
+```
+
+**macOS / Linux**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+3. Install dependencies
+
+```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Running the monitor (development)
+## Quick Demo (Recommended)
 
-You can run the monitor without a trained model by allowing fallback (development only):
-
-```powershell
-& "C:/mobython/projects/Zaalima Projects/sentinel-realtime-anomaly-detector/sentinel_env/Scripts/python.exe" sentinel.py --log-file path\to\file.log --allow-fallback --config config.yaml
+```bash
+python scripts/demo_end_to_end.py --disable-alerting
 ```
 
-This will run using a lightweight dummy model/scaler so you can exercise parsing, metrics, and alerting (console or Slack).
+## Development Run (Fallback Mode)
 
-## Running in production
-
-Train a model using `train_advanced.py` and use the produced model and scaler files. After training, run:
-
-```powershell
-& "C:/mobython/projects/Zaalima Projects/sentinel-realtime-anomaly-detector/sentinel_env/Scripts/python.exe" sentinel.py --log-file path\to\file.log --model models/model_latest.pkl --scaler models/scaler_latest.pkl --config config.yaml --production
+```bash
+python sentinel.py --log-file demo/demo.log --allow-fallback --disable-alerting --config config.yaml
 ```
 
-- Do NOT use `--allow-fallback` in production.
-- You can set `SLACK_WEBHOOK_URL` in the environment instead of placing it in `config.yaml`.
+## Production Run (Requires Model Artifacts)
 
-### Docker
+```bash
+python sentinel.py --log-file /path/to/app.log --model models/model_latest.pkl --scaler models/scaler_latest.pkl --config config.yaml --production
+```
 
-Build the container image locally:
+Notes:
 
-```powershell
+* Do NOT use `--allow-fallback` in production.
+* Use `SLACK_WEBHOOK_URL` environment variable for Slack alerts.
+
+## Docker (Optional)
+
+**Build Image**
+
+```bash
 docker build -t sentinel-anomaly .
 ```
 
-Run (mount logs and config into the container):
+**Run Container**
+
+Windows (PowerShell):
 
 ```powershell
-docker run -v C:/path/to/logs:/logs -v C:/path/to/config.yaml:/app/config.yaml sentinel-anomaly --config /app/config.yaml --production
+docker run -v "${PWD}\demo:/logs" -v "${PWD}\config.yaml:/app/config.yaml" sentinel-anomaly --config /app/config.yaml --production
+```
+
+Bash / macOS / WSL:
+
+```bash
+docker run -v "$(pwd)/demo:/logs" -v "$(pwd)/config.yaml:/app/config.yaml" sentinel-anomaly --config /app/config.yaml --production
 ```
 
 ## Tests
 
-Run unit tests with the built-in unittest runner:
-
-```powershell
-& "C:/mobython/projects/Zaalima Projects/sentinel-realtime-anomaly-detector/sentinel_env/Scripts/python.exe" -m unittest discover -v
+```bash
+python -m unittest discover -v
 ```
 
-## Notes
+## Config & Secrets
 
-- Use environment variable `SLACK_WEBHOOK_URL` to override Slack webhook secrets (keeps secrets out of config files).
-- For a production rollout consider adding CI, linting, packaging, and type checking.
+**PowerShell**
+
+```powershell
+$env:SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/XXX/YYY/ZZZ"
+```
+
+## Architecture
+
+* File watcher (`watchdog`) tails logs
+* `LogParser` extracts fields via regex
+* `FeatureExtractor` converts fields to numeric vectors
+* `StandardScaler` scales features
+* `IsolationForest` scores anomalies
+* `Alerting` module sends Slack or console alerts
+
+## Useful Files
+
+* `sentinel.py` — main monitor and CLI
+* `train_advanced.py` — training pipeline
+* `scripts/demo_end_to_end.py` — demo harness
+* `alerting.py` — Slack and console alerts
+* `metrics.py` — runtime metrics collector
